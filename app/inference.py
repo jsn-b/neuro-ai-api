@@ -3,11 +3,24 @@ import numpy as np
 from app.config import *
 from datetime import datetime
 
-# Load once
-grade_model = joblib.load(GRADE_MODEL_PATH)
-stress_model = joblib.load(STRESS_MODEL_PATH)
-scaler_g = joblib.load(SCALER_G_PATH)
-scaler_s = joblib.load(SCALER_S_PATH)
+import os
+
+print("CWD:", os.getcwd())
+print("MODEL_DIR:", MODEL_DIR)
+print("FILES:", list(MODEL_DIR.glob("*")))
+
+
+try:
+    grade_model = joblib.load(GRADE_MODEL_PATH)
+    stress_model = joblib.load(STRESS_MODEL_PATH)
+    scaler_g = joblib.load(SCALER_G_PATH)
+    scaler_s = joblib.load(SCALER_S_PATH)
+    MODELS_LOADED = True
+    print("Models loaded successfully")
+except Exception as e:
+    MODELS_LOADED = False
+    print("Model loading failed:", e)
+
 
 def sanitize(f):
     f.OnlineCourses = min(f.OnlineCourses, 10)

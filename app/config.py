@@ -1,7 +1,12 @@
 import os
 from pathlib import Path
 
-MODEL_DIR = os.getenv("MODEL_DIR")
+
+MODEL_DIR = os.getenv("MODEL_DIR", "./artifacts")
+MODEL_DIR = Path(MODEL_DIR)
+
+if not MODEL_DIR.exists():
+    raise RuntimeError(f"MODEL_DIR not found: {MODEL_DIR}")
 
 if not MODEL_DIR:
     raise RuntimeError("MODEL_DIR must be explicitly set")

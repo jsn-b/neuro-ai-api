@@ -12,8 +12,11 @@ def root():
 def health():
     return {"status": "ok"}
 
-@app.post("/predict")
+
+@app.post("/api/v1/predict")
 def run_prediction(req: InferenceRequest):
+    if not MODELS_LOADED:
+        raise RuntimeError("Models not loaded")
     try:
         return predict(req)
     except Exception as e:
