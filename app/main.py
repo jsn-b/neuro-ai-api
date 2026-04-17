@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from app.schemas import InferenceRequest
-from app.inference import predict
+from app.inference import predict, MODELS_LOADED
 
 app = FastAPI()
+
 
 @app.get("/")
 def root():
