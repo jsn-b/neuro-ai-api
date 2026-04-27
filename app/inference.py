@@ -15,6 +15,8 @@ try:
     stress_model = joblib.load(STRESS_MODEL_PATH)
     scaler_g = joblib.load(SCALER_G_PATH)
     scaler_s = joblib.load(SCALER_S_PATH)
+    balance_cap = joblib.load(BALANCE_CAP_PATH)
+
     MODELS_LOADED = True
     print("Models loaded successfully")
 except Exception as e:
@@ -23,34 +25,39 @@ except Exception as e:
 
 
 def sanitize(f):
-    f.OnlineCourses = min(f.OnlineCourses, 10)
-    f.Discussions = min(f.Discussions, 10)
+    # Only clamp pathological outliers — do NOT cap OnlineCourses at 10
+    # The scaler was fit on the full uncapped distribution
+    f.Discussions = min(f.Discussions, 50)   # hard outlier guard only
     return f
 
 def engineer(f):
-    engagement = f.OnlineCourses + f.Discussions + f.AssignmentCompletion
-    consistency = f.Attendance * f.StudyHours
+    # ── Grade model composites (must match notebook cell 10 exactly) ──────
+    engagement    = f.Discussions + f.AssignmentCompletion   # OnlineCourses excluded
+    consistency   = f.Attendance * f.StudyHours
     tech_intensity = f.EduTech * f.OnlineCourses
-    workload = f.StudyHours + f.AssignmentCompletion
-    social_load = f.Discussions + f.OnlineCourses
-    balance = f.StudyHours / (f.OnlineCourses + 1)
-    overload = engagement * f.StudyHours
+
+    # ── Stress model composites (must match notebook cell 12 exactly) ─────
+    workload   = f.StudyHours + f.AssignmentCompletion
+    social_load = f.Discussions                              # OnlineCourses excluded
+
+    raw_balance = f.StudyHours / (f.OnlineCourses + 1)
+    balance     = min(raw_balance, balance_cap)              # 99th-pct clip from training
+
+    overload    = workload / (f.Attendance / 100 + 0.1)     # ratio, not product
 
     grade_vec = [
         f.StudyHours, f.Attendance, f.Resources,
         f.OnlineCourses, f.Discussions,
         f.AssignmentCompletion, f.EduTech,
-        engagement, consistency, tech_intensity
+        engagement, consistency, tech_intensity              # 10 features
     ]
-
     stress_vec = [
         f.StudyHours, f.Attendance,
         f.OnlineCourses, f.Discussions,
         f.AssignmentCompletion, f.EduTech,
         f.Extracurricular,
-        workload, social_load, balance, overload
+        workload, social_load, balance, overload             # 11 features
     ]
-
     return grade_vec, stress_vec
 
 def bam(grade, stress):
@@ -71,14 +78,16 @@ def predict(req):
     Xg = scaler_g.transform([g])
     Xs = scaler_s.transform([s])
 
+    # Let the ML models do their job!
     gp = int(grade_model.predict(Xg)[0])
-    # Direct mapping from input
-    if f.StressLevel <= 2:
-        sp = 0
-    elif f.StressLevel <= 6:
-        sp = 1
-    else:
-        sp = 2
+    sp = int(stress_model.predict(Xs)[0])
+
+    assert scaler_g.n_features_in_ == 10, \
+    f"Grade scaler expects 10 features, got {scaler_g.n_features_in_}"
+    assert scaler_s.n_features_in_ == 11, \
+    f"Stress scaler expects 11 features, got {scaler_s.n_features_in_}"
+    print("Feature count assertions passed.")
+
 
     return {
         "student_id": req.student_id,
