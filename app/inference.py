@@ -81,13 +81,12 @@ def predict(req):
     # Let the ML models do their job!
     gp = int(grade_model.predict(Xg)[0])
     sp = int(stress_model.predict(Xs)[0])
-
+    
     assert scaler_g.n_features_in_ == 10, \
     f"Grade scaler expects 10 features, got {scaler_g.n_features_in_}"
     assert scaler_s.n_features_in_ == 11, \
     f"Stress scaler expects 11 features, got {scaler_s.n_features_in_}"
     print("Feature count assertions passed.")
-
 
     return {
         "student_id": req.student_id,
