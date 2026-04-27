@@ -71,14 +71,9 @@ def predict(req):
     Xg = scaler_g.transform([g])
     Xs = scaler_s.transform([s])
 
+    # Let the ML models do their job!
     gp = int(grade_model.predict(Xg)[0])
-    # Direct mapping from input
-    if f.StressLevel <= 2:
-        sp = 0
-    elif f.StressLevel <= 6:
-        sp = 1
-    else:
-        sp = 2
+    sp = int(stress_model.predict(Xs)[0])
 
     return {
         "student_id": req.student_id,
