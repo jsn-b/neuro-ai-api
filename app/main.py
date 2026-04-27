@@ -7,7 +7,7 @@ app = FastAPI()
 
 @app.get("/")
 def root():
-    return {"message": "Student Inference API Running"}
+    return "<html><h1>ML API version 3.0</h1><h3>You are good to go</h3></html>"
 
 @app.get("/health")
 def health():
